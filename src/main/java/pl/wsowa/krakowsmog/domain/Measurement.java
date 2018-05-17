@@ -2,13 +2,14 @@ package pl.wsowa.krakowsmog.domain;
 
 import com.google.common.base.Preconditions;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public class Measurement {
+public class Measurement implements Serializable {
     private final SensorId sensorId;
     private final Instant timestamp;
     private final LocalDate date;

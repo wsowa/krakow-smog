@@ -1,28 +1,42 @@
 package pl.wsowa.krakowsmog.dataanalyser;
 
+import com.googlecode.objectify.ObjectifyService;
+import org.junit.Ignore;
 import org.junit.Test;
+import pl.wsowa.krakowsmog.datastore.DatastoreDataSource;
+import pl.wsowa.krakowsmog.datastore.MeasurementDataObject;
 import pl.wsowa.krakowsmog.domain.SensorId;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static java.lang.System.out;
 
 public class DataAnalyserTest {
 
     @Test
-    public void anayzeFromCsv() throws IOException {
-//        DataAnalyser dataAnalyser = new DataAnalyser(new CSVDataSource("WEB-INF/resources/pm25.csv", "/pm10.csv"));
-//
-//        LocalDate startDate = LocalDate.of(2018, 3, 9);
-//        Map<SensorId, AnalysisResult> sensorsMatchingCriteria = dataAnalyser.getSensorsMatchingCriteria(SensorCriteria.sensorsMatchingCriteria()
-//                .withinDateRange(startDate, startDate.plusWeeks(2))
-//                .betweenHours(8, 20)
-//                .maxPercentageOfDaysExceeded((float) 0.2)
-//                .maxAllowedLimitExceed((float) 1.6)
-//                .maxNumberOfHoursExceededADay(2)
-//                .build());
-//        System.out.println(sensorsMatchingCriteria);
+    @Ignore
+    public void anayzeFromDatastore() throws IOException {
+        ObjectifyService.init();
+        Closeable begin = ObjectifyService.begin();
+        ObjectifyService.register(MeasurementDataObject.class);
+
+        DataAnalyser dataAnalyser = new DataAnalyser(new DatastoreDataSource());
+
+        SensorCriteriaParam criteriaParam = new SensorCriteriaParam();
+        LocalDate minDate = LocalDate.of(2018, 4, 10);
+        criteriaParam.setMinDate(minDate);
+        criteriaParam.setMaxDate(minDate.plusDays(2));
+        criteriaParam.setMinHour(8);
+        criteriaParam.setMaxHour(20);
+        criteriaParam.setMaxExceededDaysPercentage((float) 0.2);
+        criteriaParam.setMaxExceededHours(4);
+        criteriaParam.setMaxLimitExceed((float) 2.0);
+        Map<SensorId, AnalysisResult> sensorsMatchingCriteria = dataAnalyser.getSensorsMatchingCriteria(criteriaParam);
+        out.println(sensorsMatchingCriteria);
+        begin.close();
     }
+
 }

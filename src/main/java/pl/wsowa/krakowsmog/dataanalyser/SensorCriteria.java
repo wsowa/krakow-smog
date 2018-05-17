@@ -22,24 +22,40 @@ public class SensorCriteria {
         this.maxExceededDaysPercentage = maxExceededDaysPercentage;
     }
 
+    @Override
+    public String toString() {
+        return "SensorCriteria{" +
+                "dateRange=" + dateRange +
+                ", hoursRange=" + hoursRange +
+                ", maxExceededDaysPercentage=" + maxExceededDaysPercentage +
+                ", maxLimitExceed=" + maxLimitExceed +
+                ", maxExceededHours=" + maxExceededHours +
+                '}';
+    }
+
     public static SensorCriteria.Builder sensorsMatchingCriteria() {
         return new Builder();
     }
 
     static class Builder {
-        private Range<LocalDate> dateRange = Range.closed(LocalDate.MIN,LocalDate.MAX);
+        private Range<LocalDate> dateRange = Range.all();
         private Range<Integer> hoursRange = Range.closed(0,23);
         private float maxExceededDaysPercentage = (float) 1.0;
         private float maxLimitExceed = Float.MAX_VALUE;
         private int maxExceededHours = 24;
 
         Builder withinDateRange(LocalDate from, LocalDate to) {
-            Preconditions.checkArgument(from.isBefore(to) || from.isEqual(to));
-            dateRange = Range.closed(from, to);
+            dateRange =
+                    (from == null && to == null) ? Range.all() :
+                    (from == null) ? Range.atMost(to) :
+                    (to == null) ? Range.atLeast(from) :
+                            Range.closed(from, to);
             return this;
         }
 
-        Builder betweenHours(int from, int to) {
+        Builder betweenHours(Integer from, Integer to) {
+            from = from == null ? 0 : from;
+            to = to == null ? 23 : to;
             Preconditions.checkArgument(from >= 0);
             Preconditions.checkArgument(to <= 23);
             Preconditions.checkArgument(from <= to);
@@ -47,20 +63,23 @@ public class SensorCriteria {
             return this;
         }
 
-        Builder maxPercentageOfDaysExceeded(float maxExceededDaysPercentage) {
+        Builder maxPercentageOfDaysExceeded(Float maxExceededDaysPercentage) {
+            maxExceededDaysPercentage = maxExceededDaysPercentage == null ? this.maxExceededDaysPercentage : maxExceededDaysPercentage;
             Preconditions.checkArgument(maxExceededDaysPercentage >= 0.0);
             Preconditions.checkArgument(maxExceededDaysPercentage <= 1.0);
             this.maxExceededDaysPercentage = maxExceededDaysPercentage;
             return this;
         }
 
-        Builder maxAllowedLimitExceed(float maxLimitExceed) {
+        Builder maxAllowedLimitExceed(Float maxLimitExceed) {
+            maxLimitExceed = maxLimitExceed == null ? this.maxLimitExceed : maxLimitExceed;
             Preconditions.checkArgument(maxLimitExceed > 0);
             this.maxLimitExceed = maxLimitExceed;
             return this;
         }
 
-        Builder maxNumberOfHoursExceededADay(int maxExceededHours) {
+        Builder maxNumberOfHoursExceededADay(Integer maxExceededHours) {
+            maxExceededHours = maxExceededHours == null ? this.maxExceededHours : maxExceededHours;
             Preconditions.checkArgument(maxExceededHours >= 0);
             Preconditions.checkArgument(maxExceededHours <= 24);
             this.maxExceededHours = maxExceededHours;

@@ -1,14 +1,20 @@
 package pl.wsowa.krakowsmog.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
+import java.io.Serializable;
 import java.util.Objects;
 
-public class SensorId {
+public class SensorId implements Serializable {
     private final String sensorId;
 
+    @JsonCreator
     public SensorId(String sensorId) {
         this.sensorId = sensorId;
     }
 
+    @JsonValue
     public String getSensorId() {
         return sensorId;
     }

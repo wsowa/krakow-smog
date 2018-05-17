@@ -1,8 +1,9 @@
 package pl.wsowa.krakowsmog.domain;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public abstract class PolutionIndcator {
+public abstract class PolutionIndcator implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
