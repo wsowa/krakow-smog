@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+       #map {
+        height: 600px;
+        width: 100%;
+       }
+
+    </style>
+
+    <script type="text/javascript" src="//cdn.jsdelivr.net/jquery/1/jquery.min.js"></script>
+    <script type="text/javascript" src="//cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/10.0.2/bootstrap-slider.min.js"></script>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.11.1/build/css/alertify.min.css"/>
+    <!-- Default theme -->
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.11.1/build/css/themes/default.min.css"/>
+    <!-- Semantic UI theme -->
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.11.1/build/css/themes/semantic.min.css"/>
+    <!-- Bootstrap theme -->
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.11.1/build/css/themes/bootstrap.min.css"/>
+
+
+    <script type="text/javascript" src="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.js"></script>
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.css" />
+    <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/10.0.2/css/bootstrap-slider.min.css" />
+
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-xs-8 left" id="map"></div>
+        <div class="col-xs-4 right">
+            <input id="dates" type="text" name="daterange" value="26/02/2018 - 11/03/2018" /></div>
+            <input id="hours" type="text" class="span2" value="" data-slider-min="0" data-slider-max="23" data-slider-step="1" data-slider-value="[8,20]"/>
+            <input id="maxExceededHours" data-slider-id='ex1Slider' type="text" data-slider-min="0" data-slider-max="24" data-slider-step="1" data-slider-value="2"/>
+            <input id="maxLimitExceed" data-slider-id='ex1Slider' type="text" data-slider-min="0.1" data-slider-max="10.0" data-slider-step="0.1" data-slider-value="1.6"/>
+            <input id="maxExceededDaysPercentage" data-slider-id='ex1Slider' type="text" data-slider-min="0" data-slider-max="1" data-slider-step="0.01" data-slider-value="0.2"/>
+            <button id="submit-btn" type="button" class="btn btn-primary" data-loading-text="<i class='icon-spinner icon-spin icon-large'>sdf</i>">Update</button>
+        </div>
+    </div>
+</div>
+
+<script src="//cdn.jsdelivr.net/npm/alertifyjs@1.11.1/build/alertify.min.js"></script>
+<script src="maps.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCb57UMgxh_KIq6gPVmUqFBhtW3eu5O8FY&callback=initMap"></script>
+
+<script type="text/javascript">
+var startDate = moment("2018-02-26")
+var endDate = moment("2018-03-11")
+var minDate = moment("2018-02-20")
+var maxDate = moment().subtract(38, 'hours');
+var datePicker = $('#dates').daterangepicker({
+    "timePickerIncrement": 1,
+    <!--"parentEl": '#dates',-->
+    "autoApply": true,
+    "startDate": startDate,
+    "endDate": endDate,
+    "minDate": minDate,
+    "maxDate": maxDate,
+    "opens": "left",
+    "drops": "down",
+    "buttonClasses": "btn btn-sm"
+}, function(start, end, label) {
+    startDate = start;
+    endDate = end;
+});
+
+var hoursSlider = $("#hours").slider({tooltip: 'always'});
+var maxExceededHoursSlider = $("#maxExceededHours").slider({tooltip: 'always'});
+var maxLimitExceedSlider = $("#maxLimitExceed").slider({tooltip: 'always', formatter: function(v) { return v*100+"%"}});
+var maxExceededDaysPercentageSlider = $("#maxExceededDaysPercentage").slider({tooltip: 'always', formatter: function(v) { return v*100+"%"}});
+$('#submit-btn').on('click', function (e) { onBtnClick() })
+
+function onBtnClick() {
+    updateMarkers(startDate.format("YYYY-MM-DD"), endDate.format("YYYY-MM-DD"), hoursSlider.slider('getValue'), maxExceededHoursSlider.slider('getValue'), maxLimitExceedSlider.slider('getValue'), maxExceededDaysPercentageSlider.slider('getValue'))
+    $('#submit-btn').text('Loading...')
+    $('#submit-btn').attr("disabled", true);
+}
+onBtnClick();
+</script>
+
+</body>
+</html>
+
+<!-- JavaScript -->
+
+<!-- Include Required Prerequisites -->
+
+<!--<link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap/3/css/bootstrap.css" />-->
+
+<!-- Include Date Range Picker -->

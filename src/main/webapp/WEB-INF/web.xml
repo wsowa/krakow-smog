@@ -4,19 +4,9 @@
         xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
         version="2.5">
-
-    <filter>
-        <filter-name>ObjectifyFilter</filter-name>
-        <filter-class>com.googlecode.objectify.ObjectifyFilter</filter-class>
-    </filter>
-    <filter-mapping>
-        <filter-name>ObjectifyFilter</filter-name>
-        <url-pattern>/*</url-pattern>
-    </filter-mapping>
-
-    <filter>
-        <filter-name>JerseyApplication</filter-name>
-        <filter-class>org.glassfish.jersey.servlet.ServletContainer</filter-class>
+    <servlet>
+        <servlet-name>JerseyApplication</servlet-name>
+        <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
 
         <init-param>
             <!--
@@ -31,11 +21,22 @@
             <param-value>pl.wsowa.krakowsmog.JerseyApplication</param-value>
         </init-param>
 
-    </filter>
+    </servlet>
 
+    <servlet-mapping>
+        <servlet-name>JerseyApplication</servlet-name>
+        <url-pattern>/*</url-pattern>
+    </servlet-mapping>
+
+
+    <filter>
+        <filter-name>ObjectifyFilter</filter-name>
+        <filter-class>com.googlecode.objectify.ObjectifyFilter</filter-class>
+    </filter>
     <filter-mapping>
-        <filter-name>JerseyApplication</filter-name>
-        <url-pattern>/sensors/*</url-pattern>
+        <filter-name>ObjectifyFilter</filter-name>
+        <url-pattern>/*</url-pattern>
     </filter-mapping>
+
 
 </web-app>

@@ -2,8 +2,8 @@ package pl.wsowa.krakowsmog.datastore;
 
 import com.google.appengine.api.memcache.MemcacheService;
 import com.google.appengine.api.memcache.stdimpl.GCacheFactory;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Range;
+import com.google.common.collect.*;
+import com.googlecode.objectify.cmd.QueryResultIterable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.wsowa.krakowsmog.dataanalyser.DataSource;
@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.googlecode.objectify.ObjectifyService.ofy;
+import static java.util.function.Function.identity;
 import static pl.wsowa.krakowsmog.datastore.MeasurementDataObject.ZONE_ID;
 
 public class DatastoreDataSource implements DataSource {
@@ -62,34 +63,46 @@ public class DatastoreDataSource implements DataSource {
         LocalDate upperBound = dateRange.hasUpperBound() ? dateRange.upperEndpoint() : getLastStoredDate();
         if (lowerBound == null || upperBound == null) return ImmutableSet.of();
 
-       return ImmutableSet.copyOf(Stream
-               .iterate(lowerBound, d -> d.plusDays(1))
-               .limit(ChronoUnit.DAYS.between(lowerBound, upperBound) + 1)
-               .parallel().unordered()
-               .flatMap(date -> getMeasurementsForSingleDate(date, hoursRange))
-               .iterator());
+        logger.info("Getting measurements for {}/{}", dateRange, hoursRange);
+        Map<HourAtDate, Iterable<MeasurementDataObject>> measurementsFetch
+                = Stream
+                .iterate(lowerBound, d -> d.plusDays(1))
+                .limit(ChronoUnit.DAYS.between(lowerBound, upperBound) + 1)
+                .flatMap(date -> getHoursAtDate(date, hoursRange))
+//                .parallel().unordered()
+                .collect(Collectors.toMap(identity(), this::getMeasurementsForSingleDate));
+
+        logger.info("Materializing measurements for {}/{}", dateRange, hoursRange);
+        Map<HourAtDate, List<MeasurementDataObject>> measurementsByTime = measurementsFetch.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> ImmutableList.copyOf(e.getValue())));
+
+        if(cache != null) {
+            logger.info("Populating cache {}/{}", dateRange, hoursRange);
+            measurementsByTime.forEach((hourAtDate, measurements) -> cache.put(hourAtDate, measurements));
+        }
+
+        logger.info("Returning measurements {}/{}", dateRange, hoursRange);
+        return ImmutableSet.copyOf(measurementsByTime.values().stream().flatMap(Collection::stream).map(MeasurementDataObject::toMeasurement).iterator());
     }
 
-    private Stream<Measurement> getMeasurementsForSingleDate(LocalDate date, Range<Integer> hoursRange) {
-        logger.info("Loading measurements for {}/{}", date, hoursRange);
-        CacheKey cacheKey = new CacheKey(date, hoursRange);
-        Collection<MeasurementDataObject> measurements;
-        if (cache != null && cache.containsKey(cacheKey)) {
-            measurements = (Collection<MeasurementDataObject>) cache.get(cacheKey);
-            logger.info("Retuning from cache for {}/{}", date, hoursRange);
-        } else {
-            measurements = ofy().load().type(MeasurementDataObject.class)
-                    .filter("date", toDate(date))
-                    .filter("hour >=", hoursRange.lowerEndpoint())
-                    .filter("hour <=", hoursRange.upperEndpoint())
-                    .order("hour")
-                    .list();
-            if (cache != null && measurements.size() > 0 )
-                cache.put(cacheKey, measurements);
-            logger.info("Returning from datastore for {}/{}", date, hoursRange);
-        }
-        return measurements.stream().map(MeasurementDataObject::toMeasurement);
+    private Stream<HourAtDate> getHoursAtDate(LocalDate date, Range<Integer> hoursRange) {
+        return ContiguousSet.create(hoursRange, DiscreteDomain.integers()).stream()
+                .map(hour -> new HourAtDate(date, hour));
+    }
 
+    private Iterable<MeasurementDataObject> getMeasurementsForSingleDate(HourAtDate hourAtDate) {
+        logger.info("Loading measurements for {}", hourAtDate);
+        if (cache != null && cache.containsKey(hourAtDate)) {
+            logger.info("Retuning from cache for {}", hourAtDate);
+            return ((Collection<MeasurementDataObject>) cache.get(hourAtDate));
+        } else {
+            logger.info("Querying datastore for {}", hourAtDate);
+            QueryResultIterable<MeasurementDataObject> iterable = ofy().load().type(MeasurementDataObject.class)
+                    .filter("date", toDate(hourAtDate.date))
+                    .filter("hour", hourAtDate.hour)
+                    .iterable();
+            return iterable;
+        }
     }
 
     private LocalDate getFirstStoredDate() {

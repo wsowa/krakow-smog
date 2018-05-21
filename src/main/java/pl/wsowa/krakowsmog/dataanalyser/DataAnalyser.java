@@ -42,7 +42,6 @@ public class DataAnalyser {
                 .collect(groupingBy(Measurement::getSensorId))
                 .entrySet().stream()
                 .collect(toMap(Map.Entry::getKey, e -> analyseSensorData(e.getValue(), criteria)));
-
     }
 
     @GET
@@ -61,13 +60,13 @@ public class DataAnalyser {
 
         int days = getAnalysisPeriodLength(criteria.dateRange, measurementsByDate.keySet());
 
-        Map<AnalysisResult, Long> summary = Stream.concat(dailyDataAnalysis, Stream.generate(() -> AnalysisResult.UNSUFICIENT_DATA))
+        Map<AnalysisResult, Long> summary = Stream.concat(dailyDataAnalysis, Stream.generate(() -> AnalysisResult.INSUFFICIENT_DATA))
                 .limit(days)
                 .collect(groupingBy(identity(), counting()));
 
 
-        if (!getSufficientDailyData(summary.getOrDefault(AnalysisResult.UNSUFICIENT_DATA, (long) 0), days)) {
-            return AnalysisResult.UNSUFICIENT_DATA;
+        if (!getSufficientDailyData(summary.getOrDefault(AnalysisResult.INSUFFICIENT_DATA, (long) 0), days)) {
+            return AnalysisResult.INSUFFICIENT_DATA;
         } else if (summary.getOrDefault(AnalysisResult.BAD, (long) 0) > days * criteria.maxExceededDaysPercentage) {
             return AnalysisResult.BAD;
         } else {
@@ -83,7 +82,7 @@ public class DataAnalyser {
 
     private AnalysisResult analyseDailyData(List<Measurement> measurements, SensorCriteria criteria) {
         if (!gotSuffcientHourlyData(measurements, criteria.hoursRange))
-            return AnalysisResult.UNSUFICIENT_DATA;
+            return AnalysisResult.INSUFFICIENT_DATA;
         else {
             return measurements.stream()
                     .map(measurement -> measurement.withinLimit(criteria.maxLimitExceed))
